@@ -29,6 +29,7 @@ def _create_default_pathmanager():
     pathmgr = PathManager()
     pathmgr.register_handler(HTTPURLHandler(), allow_override=True)
     pathmgr.register_handler(OneDrivePathHandler(), allow_override=True)
+    pathmgr.register_handler(file_lock(), allow_override=True)
     # S3PathHandler is not included in 0.1.8
     try:
         from iopath.common.s3 import S3PathHandler
@@ -185,7 +186,7 @@ class IoPathSaverIterDataPipe(IterDataPipe[str]):
             filepath = meta if self.filepath_fn is None else self.filepath_fn(meta)
 
             if not os.path.exists(filepath):
-                with file_lock(file_path):
+                with self.pathmgr.file_lock(filepath):
                     with self.pathmgr.open(filepath, self.mode) as f:
                         f.write(data)
             yield filepath
