@@ -24,7 +24,7 @@ U = Union[bytes, bytearray, str]
 
 
 def _create_default_pathmanager():
-    from iopath.common.file_io import HTTPURLHandler, OneDrivePathHandler, PathManager, file_lock
+    from iopath.common.file_io import file_lock, HTTPURLHandler, OneDrivePathHandler, PathManager
 
     pathmgr = PathManager()
     pathmgr.register_handler(HTTPURLHandler(), allow_override=True)
@@ -185,9 +185,9 @@ class IoPathSaverIterDataPipe(IterDataPipe[str]):
         for meta, data in self.source_datapipe:
             filepath = meta if self.filepath_fn is None else self.filepath_fn(meta)
 
-            if not os.path.exists(filepath):
-                with self.pathmgr.file_lock(filepath):
-                    with self.pathmgr.open(filepath, self.mode) as f:
+            with self.pathmgr.file_lock(filepath):
+                with self.pathmgr.open(filepath, self.mode) as f:
+                    if not os.path.exists(filepath):
                         f.write(data)
             yield filepath
 
