@@ -655,6 +655,37 @@ class TestDataPipeLocalIO(expecttest.TestCase):
         # __len__ Test: returns the length of source DataPipe
         self.assertEqual(3, len(saver_dp))
 
+    @skipIfNoIoPath
+    def test_io_path_saver_file_lock(self):
+        def filepath_fn(name: str) -> str:
+            return os.path.join(self.temp_dir.name, os.path.basename(name))
+
+        # Same filename with different name
+        name_to_data = {"1.txt": b"DATA1", "1.txt": b"DATA2", "2.txt": b"DATA3", "2.txt": b"DATA4"}
+
+        # Add sharding_filter to shard data into 2 
+        source_dp = IterableWrapper(name_to_data.items()).sharding_filter()
+
+        # Use appending as the mode
+        saver_dp = source_dp.save_by_iopath(filepath_fn=filepath_fn, mode="a")
+
+        import torch.utils.data.graph_settings
+
+        def init_fn(worker_id):
+            info = torch.utils.data.get_worker_info()
+            num_workers = info.num_workers
+            datapipe = info.dataset
+            torch.utils.data.graph_settings.apply_sharding(datapipe, num_workers, worker_id)
+        
+        from torch.utils.data import DataLoader
+        dl = DataLoader(saver_dp, num_workers=2, worker_init_fn=init_fn)
+
+        for filename in ["1.txt", "2.txt"]:
+            with open(filename, 'r') as fp:
+                x = len(fp.readlines())
+                self.assertEqual(x, 1)
+
+
     def _write_test_rar_files(self):
         # `rarfile` can only read but not write .rar archives so we use to system utilities
         rar_archive_name = os.path.join(self.temp_dir.name, "test_rar")
