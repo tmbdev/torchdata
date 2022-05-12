@@ -680,16 +680,16 @@ class TestDataPipeLocalIO(expecttest.TestCase):
         from torch.utils.data import DataLoader
 
         num_workers = 2
-        num_files = 0
+        line_lengths = []
         dl = DataLoader(saver_dp, num_workers=num_workers, worker_init_fn=init_fn)
         for filename in dl:
             with open(filename[0]) as f:
                 lines = f.readlines()
                 x = len(lines)
-                num_files += 1
+                line_lengths.append(x)
                 self.assertEqual(x, 1)
 
-        self.assertEqual(len(set(name_to_data.keys())), num_files)
+        self.assertEqual(num_workers, len(line_lengths))
 
     def _write_test_rar_files(self):
         # `rarfile` can only read but not write .rar archives so we use to system utilities
