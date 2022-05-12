@@ -689,7 +689,7 @@ class TestDataPipeLocalIO(expecttest.TestCase):
                 line_lengths.append(x)
                 self.assertEqual(x, 1)
 
-        self.assertEqual(num_workers, len(line_lengths))
+        self.assertEqual(len(set(name_to_data.keys())), len(line_lengths))
 
     def _write_test_rar_files(self):
         # `rarfile` can only read but not write .rar archives so we use to system utilities
