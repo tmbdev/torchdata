@@ -24,12 +24,11 @@ U = Union[bytes, bytearray, str]
 
 
 def _create_default_pathmanager():
-    from iopath.common.file_io import file_lock, HTTPURLHandler, OneDrivePathHandler, PathManager
+    from iopath.common.file_io import HTTPURLHandler, OneDrivePathHandler, PathManager
 
     pathmgr = PathManager()
     pathmgr.register_handler(HTTPURLHandler(), allow_override=True)
     pathmgr.register_handler(OneDrivePathHandler(), allow_override=True)
-    pathmgr.register_handler(file_lock(), allow_override=True)
     # S3PathHandler is not included in 0.1.8
     try:
         from iopath.common.s3 import S3PathHandler
@@ -185,11 +184,11 @@ class IoPathSaverIterDataPipe(IterDataPipe[str]):
         for meta, data in self.source_datapipe:
             filepath = meta if self.filepath_fn is None else self.filepath_fn(meta)
 
-            with self.pathmgr.file_lock(filepath):
+            with iopath.file_lock(filepath):
                 if not os.path.exists(filepath):
                     with self.pathmgr.open(filepath, self.mode) as f:
                         f.write(data)
-                        
+
             yield filepath
 
     def register_handler(self, handler, allow_override=False):

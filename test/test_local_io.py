@@ -661,13 +661,13 @@ class TestDataPipeLocalIO(expecttest.TestCase):
             return os.path.join(self.temp_dir.name, os.path.basename(name))
 
         # Same filename with different name
-        name_to_data = {"1.txt": b"DATA1", "1.txt": b"DATA2", "2.txt": b"DATA3", "2.txt": b"DATA4"}
+        name_to_data = {"1.txt": b"DATA1", "1.txt": b"DATA2", "2.txt": b"DATA3", "2.txt": b"DATA4"}  # noqa: F601
 
-        # Add sharding_filter to shard data into 2 
+        # Add sharding_filter to shard data into 2
         source_dp = IterableWrapper(name_to_data.items()).sharding_filter()
 
         # Use appending as the mode
-        saver_dp = source_dp.save_by_iopath(filepath_fn=filepath_fn, mode="a")
+        saver_dp = source_dp.save_by_iopath(filepath_fn=filepath_fn, mode="ab")
 
         import torch.utils.data.graph_settings
 
@@ -676,15 +676,20 @@ class TestDataPipeLocalIO(expecttest.TestCase):
             num_workers = info.num_workers
             datapipe = info.dataset
             torch.utils.data.graph_settings.apply_sharding(datapipe, num_workers, worker_id)
-        
-        from torch.utils.data import DataLoader
-        dl = DataLoader(saver_dp, num_workers=2, worker_init_fn=init_fn)
 
-        for filename in ["1.txt", "2.txt"]:
-            with open(filename, 'r') as fp:
-                x = len(fp.readlines())
+        from torch.utils.data import DataLoader
+
+        num_workers = 2
+        line_lengths = []
+        dl = DataLoader(saver_dp, num_workers=num_workers, worker_init_fn=init_fn)
+        for filename in dl:
+            with open(filename[0]) as f:
+                lines = f.readlines()
+                x = len(lines)
+                line_lengths.append(x)
                 self.assertEqual(x, 1)
 
+        self.assertEqual(num_workers, len(line_lengths))
 
     def _write_test_rar_files(self):
         # `rarfile` can only read but not write .rar archives so we use to system utilities
