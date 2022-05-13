@@ -664,7 +664,7 @@ class TestDataPipeLocalIO(expecttest.TestCase):
         name_to_data = {"1.txt": b"DATA1", "1.txt": b"DATA2", "2.txt": b"DATA3", "2.txt": b"DATA4"}  # noqa: F601
 
         # Add sharding_filter to shard data into 2
-        source_dp = IterableWrapper(name_to_data.items()).sharding_filter()
+        source_dp = IterableWrapper(list(name_to_data.items())).sharding_filter()
 
         # Use appending as the mode
         saver_dp = source_dp.save_by_iopath(filepath_fn=filepath_fn, mode="ab")
